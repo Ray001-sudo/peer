@@ -218,23 +218,33 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* Footer - UPDATED SECTION */}
       <footer className="py-12 px-4 border-t border-border">
         <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-lg">P</span>
               </div>
               <span className="font-semibold">PeerPair Kenya</span>
             </div>
-            <p className="text-sm text-muted-foreground">
-              © 2026 PeerPair Kenya. All rights reserved.Developed by Ray
-            </p>
-            <div className="flex gap-6 text-sm text-muted-foreground">
-              <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-              <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
-              <Link to="/contact" className="hover:text-foreground transition-colors">Contact</Link>
+
+            <div className="text-center md:text-left">
+              <p className="text-sm text-muted-foreground">
+                © 2026 PeerPair Kenya. All rights reserved.
+              </p>
+              <p className="text-[10px] text-muted-foreground/60 uppercase tracking-widest mt-1">
+                Developed by Ray
+              </p>
+            </div>
+
+            <div className="flex gap-6 text-sm font-medium text-muted-foreground">
+              <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
+              <Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
+              {/* Corrected path to point to /support */}
+              <Link to="/support" className="hover:text-primary transition-colors">
+                Contact Support
+              </Link>
             </div>
           </div>
         </div>

@@ -18,6 +18,8 @@ import Bookings from "./pages/Bookings";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import Support from "./pages/Support"; // <-- ADDED THIS
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,7 +38,19 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/terms" element={<Terms />} />
             
-            {/* Onboarding (protected but doesn't require completed onboarding) */}
+            {/* Support Page: 
+               Accessible to logged-in users, even if onboarding isn't done.
+            */}
+            <Route
+              path="/support"
+              element={
+                <ProtectedRoute requireOnboarding={false}>
+                  <Support />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/privacy" element={<Privacy />} />
+            {/* Onboarding */}
             <Route
               path="/onboarding"
               element={
