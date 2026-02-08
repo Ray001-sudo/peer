@@ -229,7 +229,10 @@ export default function Landing() {
               <span className="font-semibold">PeerPair Kenya</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2024 PeerPair Kenya. All rights reserved.
+              © 2026 PeerPair Kenya. All rights reserved.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Developed by Ray
             </p>
             <div className="flex gap-6 text-sm text-muted-foreground">
               <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
