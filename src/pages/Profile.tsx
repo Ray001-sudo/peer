@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Save } from "lucide-react";
+import { Save, Trash2 } from "lucide-react"; // Added Trash2 icon
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
+// This path is the standard for Lovable/Vite projects and should not cause a white screen
+import { supabase } from "@/integrations/supabase/client"; 
 import {
   Form,
   FormControl,
@@ -66,6 +68,30 @@ export default function Profile() {
 
   const isCompanion = profile?.role === "companion";
 
+  // New: logic to remove the profile picture
+  const handleRemoveAvatar = async () => {
+    if (!window.confirm("Are you sure you want to remove your profile picture?")) return;
+
+    try {
+      const currentPath = profile?.avatar_url;
+      
+      // If there is a file path, attempt to delete from storage
+      if (currentPath && !currentPath.startsWith('http')) {
+        await supabase.storage.from("avatars").remove([currentPath]);
+      }
+
+      // Update the database to clear the avatar reference
+      await updateProfile({
+        avatar_url: null,
+      });
+
+      setAvatarUrl(null);
+      refetch();
+    } catch (error) {
+      console.error("Error removing avatar:", error);
+    }
+  };
+
   const onSubmit = (data: ProfileFormData) => {
     updateProfile({
       full_name: data.full_name,
@@ -104,8 +130,8 @@ export default function Profile() {
         >
           <h1 className="text-2xl font-bold mb-6">Edit Profile</h1>
 
-          {/* Avatar Upload */}
-          <div className="mb-8">
+          {/* Avatar Upload Section */}
+          <div className="mb-8 flex flex-col items-center">
             <AvatarUpload
               currentAvatarUrl={avatarUrl || profile?.avatar_url || null}
               fullName={profile?.full_name || null}
@@ -114,6 +140,22 @@ export default function Profile() {
                 refetch();
               }}
             />
+            
+            {/* Added: Remove Photo Button */}
+            {(avatarUrl || profile?.avatar_url) && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="mt-3 text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={handleRemoveAvatar}
+                disabled={isUpdating}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Remove Photo
+              </Button>
+            )}
+
             <p className="text-center text-sm text-muted-foreground mt-2">
               Click the camera icon to upload a new photo
             </p>
@@ -155,7 +197,6 @@ export default function Profile() {
 
               {isCompanion && (
                 <>
-                  {/* Location & Age */}
                   <div className="grid md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -208,7 +249,6 @@ export default function Profile() {
                     />
                   </div>
 
-                  {/* Height & Complexion */}
                   <div className="grid md:grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -267,7 +307,6 @@ export default function Profile() {
                     />
                   </div>
 
-                  {/* Bio */}
                   <FormField
                     control={form.control}
                     name="bio"
@@ -289,7 +328,6 @@ export default function Profile() {
                     )}
                   />
 
-                  {/* Rates */}
                   <div className="bg-accent/50 rounded-xl p-4">
                     <h4 className="font-medium mb-4">Rates (KES)</h4>
                     <div className="grid md:grid-cols-3 gap-4">
