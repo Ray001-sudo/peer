@@ -1,19 +1,38 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Search, Calendar, TrendingUp, ArrowRight, Users, DollarSign } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, Calendar, TrendingUp, ArrowRight, Users, DollarSign, Trash2 } from "lucide-react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useProfile } from "@/hooks/useProfile";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const { profile, isLoading: profileLoading } = useProfile();
+  const queryClient = useQueryClient();
 
+  // 1. Fetch IDs of activities the user has hidden in the database
+  const { data: hiddenIds = [] } = useQuery({
+    queryKey: ["hidden-activities", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("hidden_activities")
+        .select("booking_id")
+        .eq("user_id", user.id);
+      
+      if (error) throw error;
+      return data.map((item) => item.booking_id);
+    },
+    enabled: !!user?.id,
+  });
+
+  // 2. Fetch recent bookings
   const { data: bookings, isLoading: bookingsLoading } = useQuery({
     queryKey: ["my-bookings", user?.id],
     queryFn: async () => {
@@ -24,7 +43,7 @@ export default function Dashboard() {
         .select("*")
         .or(`client_id.eq.${user.id},companion_id.eq.${user.id}`)
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(10); // Fetch a few more so we have some left if some are hidden
 
       if (error) throw error;
       return data;
@@ -32,41 +51,60 @@ export default function Dashboard() {
     enabled: !!user?.id,
   });
 
+  // 3. Logic to hide activities in the database
+  const hideActivitiesMutation = useMutation({
+    mutationFn: async () => {
+      if (!bookings || !user?.id) return;
+
+      // Only hide bookings that aren't already hidden
+      const currentVisibleIds = bookings
+        .filter((b) => !hiddenIds.includes(b.id))
+        .map((b) => ({
+          user_id: user.id,
+          booking_id: b.id,
+        }));
+
+      if (currentVisibleIds.length === 0) return;
+
+      const { error } = await supabase
+        .from("hidden_activities")
+        .insert(currentVisibleIds);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      // Refresh the hidden list so the UI updates
+      queryClient.invalidateQueries({ queryKey: ["hidden-activities", user?.id] });
+      toast.success("Recent activity cleared");
+    },
+    onError: () => {
+      toast.error("Failed to clear activity");
+    }
+  });
+
+  // Filter out the hidden bookings for the UI
+  const visibleBookings = bookings?.filter((b) => !hiddenIds.includes(b.id)) || [];
+
   const isCompanion = profile?.role === "companion";
 
   const stats = isCompanion
     ? [
-        {
-          title: "Total Earnings",
-          value: "KES 0",
-          icon: DollarSign,
-          change: "+0%",
+        { title: "Total Earnings", value: "KES 0", icon: DollarSign, change: "+0%" },
+        { 
+          title: "Active Bookings", 
+          value: bookings?.filter((b) => b.status === "funded_escrow").length || 0, 
+          icon: Calendar, 
+          change: "Live" 
         },
-        {
-          title: "Active Bookings",
-          value: bookings?.filter((b) => b.status === "funded_escrow").length || 0,
-          icon: Calendar,
-          change: "Live",
-        },
-        {
-          title: "Profile Views",
-          value: "0",
-          icon: Users,
-          change: "This week",
-        },
+        { title: "Profile Views", value: "0", icon: Users, change: "This week" },
       ]
     : [
-        {
-          title: "Total Bookings",
-          value: bookings?.length || 0,
-          icon: Calendar,
-          change: "All time",
-        },
-        {
-          title: "Active Now",
-          value: bookings?.filter((b) => b.status === "funded_escrow").length || 0,
-          icon: TrendingUp,
-          change: "In progress",
+        { title: "Total Bookings", value: bookings?.length || 0, icon: Calendar, change: "All time" },
+        { 
+          title: "Active Now", 
+          value: bookings?.filter((b) => b.status === "funded_escrow").length || 0, 
+          icon: TrendingUp, 
+          change: "In progress" 
         },
       ];
 
@@ -98,21 +136,12 @@ export default function Dashboard() {
               </>
             )}
             <div className="mt-6 flex flex-wrap gap-3">
-              {isCompanion ? (
-                <Button variant="secondary" asChild>
-                  <Link to="/profile">
-                    Edit Profile
-                    <ArrowRight className="ml-2 w-4 h-4" />
-                  </Link>
-                </Button>
-              ) : (
-                <Button variant="secondary" asChild>
-                  <Link to="/explore">
-                    <Search className="mr-2 w-4 h-4" />
-                    Explore Companions
-                  </Link>
-                </Button>
-              )}
+              <Button variant="secondary" asChild>
+                <Link to={isCompanion ? "/profile" : "/explore"}>
+                  {isCompanion ? "Edit Profile" : "Explore Companions"}
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Link>
+              </Button>
               <Button
                 variant="ghost"
                 className="text-primary-foreground hover:text-primary-foreground hover:bg-primary-foreground/10"
@@ -155,9 +184,23 @@ export default function Dashboard() {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Recent Activity</h2>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/bookings">View all</Link>
-            </Button>
+            <div className="flex gap-2">
+              {visibleBookings.length > 0 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => hideActivitiesMutation.mutate()}
+                  disabled={hideActivitiesMutation.isPending}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  {hideActivitiesMutation.isPending ? "Clearing..." : "Clear"}
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/bookings">View all</Link>
+              </Button>
+            </div>
           </div>
 
           {bookingsLoading ? (
@@ -166,62 +209,62 @@ export default function Dashboard() {
                 <Skeleton key={i} className="h-16 w-full rounded-xl" />
               ))}
             </div>
-          ) : bookings && bookings.length > 0 ? (
+          ) : visibleBookings.length > 0 ? (
             <div className="space-y-3">
-              {bookings.map((booking) => (
-                <Card key={booking.id} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">
-                        {booking.booking_type.charAt(0).toUpperCase() +
-                          booking.booking_type.slice(1)}{" "}
-                        Booking
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        KES {booking.total_amount.toLocaleString()} • {booking.duration}{" "}
-                        {booking.booking_type === "hourly"
-                          ? "hour(s)"
-                          : booking.booking_type === "daily"
-                          ? "day(s)"
-                          : "week(s)"}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <span
-                        className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
-                          booking.status === "completed"
-                            ? "bg-success/10 text-success"
-                            : booking.status === "funded_escrow"
-                            ? "bg-primary/10 text-primary"
-                            : booking.status === "cancelled"
-                            ? "bg-destructive/10 text-destructive"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {booking.status.replace("_", " ")}
-                      </span>
-                    </div>
-                  </div>
-                </Card>
-              ))}
+              <AnimatePresence mode="popLayout">
+                {visibleBookings.map((booking) => (
+                  <motion.div
+                    key={booking.id}
+                    layout
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                  >
+                    <Card className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">
+                            {booking.booking_type.charAt(0).toUpperCase() +
+                              booking.booking_type.slice(1)}{" "}
+                            Booking
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            KES {booking.total_amount.toLocaleString()} • {booking.duration}{" "}
+                            {booking.booking_type === "hourly"
+                              ? "hour(s)"
+                              : booking.booking_type === "daily"
+                              ? "day(s)"
+                              : "week(s)"}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <span
+                            className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium ${
+                              booking.status === "completed"
+                                ? "bg-success/10 text-success"
+                                : booking.status === "funded_escrow"
+                                ? "bg-primary/10 text-primary"
+                                : booking.status === "cancelled"
+                                ? "bg-destructive/10 text-destructive"
+                                : "bg-muted text-muted-foreground"
+                            }`}
+                          >
+                            {booking.status.replace("_", " ")}
+                          </span>
+                        </div>
+                      </div>
+                    </Card>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           ) : (
-            <Card className="p-8 text-center">
-              <Calendar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-medium mb-1">No bookings yet</h3>
+            <Card className="p-8 text-center border-dashed">
+              <Calendar className="w-12 h-12 mx-auto text-muted-foreground mb-4 opacity-50" />
+              <h3 className="font-medium mb-1">No recent activity</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                {isCompanion
-                  ? "When clients book you, they'll appear here."
-                  : "Start exploring companions to make your first booking."}
+                Your recent history is cleared. New bookings will appear here.
               </p>
-              {!isCompanion && (
-                <Button asChild>
-                  <Link to="/explore">
-                    <Search className="mr-2 w-4 h-4" />
-                    Find Companions
-                  </Link>
-                </Button>
-              )}
             </Card>
           )}
         </div>
