@@ -96,18 +96,18 @@ export default function Explore() {
                 </SheetHeader>
 
                 <div className="mt-6 space-y-6">
-                  {/* Location */}
+                  {/* Location Filter - Fixed value="" crash */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Location</label>
                     <Select
-                      value={filters.location}
-                      onValueChange={(value) => setFilters({ ...filters, location: value })}
+                      value={filters.location || "all"} 
+                      onValueChange={(value) => setFilters({ ...filters, location: value === "all" ? "" : value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="All locations" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All locations</SelectItem>
+                        <SelectItem value="all">All locations</SelectItem>
                         {KENYAN_LOCATIONS.map((loc) => (
                           <SelectItem key={loc} value={loc}>
                             {loc}
@@ -166,20 +166,20 @@ export default function Explore() {
                     />
                   </div>
 
-                  {/* Booking Type */}
+                  {/* Booking Type - Fixed value="" crash */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Available for</label>
                     <Select
-                      value={filters.bookingType}
+                      value={filters.bookingType || "any"}
                       onValueChange={(value) =>
-                        setFilters({ ...filters, bookingType: value })
+                        setFilters({ ...filters, bookingType: value === "any" ? "" : value })
                       }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Any type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any type</SelectItem>
+                        <SelectItem value="any">Any type</SelectItem>
                         {BOOKING_TYPES.map((type) => (
                           <SelectItem key={type.value} value={type.value}>
                             {type.label}
@@ -203,7 +203,7 @@ export default function Explore() {
           </div>
         </div>
 
-        {/* Active Filters */}
+        {/* Active Filter Badges */}
         {activeFilterCount > 0 && (
           <div className="flex flex-wrap gap-2">
             {filters.location && (
@@ -248,7 +248,7 @@ export default function Explore() {
           </div>
         )}
 
-        {/* Results Grid */}
+        {/* Results Section */}
         {isLoading ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -270,9 +270,9 @@ export default function Explore() {
               >
                 <Link
                   to={`/companion/${companion.id}`}
-                  className="block rounded-2xl border border-border bg-card overflow-hidden hover-lift"
+                  className="block rounded-2xl border border-border bg-card overflow-hidden hover:shadow-lg transition-all duration-300"
                 >
-                  <div className="aspect-[4/5] bg-muted flex items-center justify-center">
+                  <div className="aspect-[4/5] bg-muted flex items-center justify-center relative">
                     {companion.avatar_url ? (
                       <img
                         src={companion.avatar_url}
@@ -285,32 +285,32 @@ export default function Explore() {
                   </div>
                   <div className="p-4 space-y-2">
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="max-w-[70%]">
                         <h3 className="font-semibold truncate">
                           {companion.full_name || "Anonymous"}
                         </h3>
                         <p className="text-sm text-muted-foreground flex items-center gap-1">
                           <MapPin className="w-3 h-3" />
-                          {companion.location || "Kenya"}
+                          <span className="truncate">{companion.location || "Kenya"}</span>
                         </p>
                       </div>
                       {companion.age && (
-                        <Badge variant="secondary">{companion.age} yrs</Badge>
+                        <Badge variant="secondary" className="whitespace-nowrap">{companion.age} yrs</Badge>
                       )}
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {companion.complexion && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-[10px] capitalize">
                           {companion.complexion}
                         </Badge>
                       )}
                       {companion.height && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-[10px]">
                           {companion.height}
                         </Badge>
                       )}
                     </div>
-                    <div className="pt-2 border-t border-border">
+                    <div className="pt-2 border-t border-border mt-auto">
                       <p className="text-sm text-primary font-medium">
                         From KES {companion.rate_hourly?.toLocaleString() || "---"}/hr
                       </p>
@@ -321,16 +321,16 @@ export default function Explore() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-16">
+          <div className="text-center py-16 bg-muted/30 rounded-3xl border border-dashed">
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
               <Search className="w-8 h-8 text-muted-foreground" />
             </div>
             <h3 className="text-lg font-medium mb-2">No companions found</h3>
-            <p className="text-muted-foreground mb-4">
-              Try adjusting your filters or check back later
+            <p className="text-muted-foreground mb-6 max-w-xs mx-auto">
+              We couldn't find anyone matching your exact search criteria. Try broadening your filters.
             </p>
             <Button variant="outline" onClick={clearFilters}>
-              Clear Filters
+              Clear All Filters
             </Button>
           </div>
         )}
