@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, ArrowLeft, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, CheckCircle, Mail } from "lucide-react"; // Added Mail icon
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { toast } from "sonner";
+import { Card } from "@/components/ui/card"; // Ensure Card is imported
 
 const signupSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -37,6 +38,8 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSignedUp, setIsSignedUp] = useState(false); // New State
+  const [registeredEmail, setRegisteredEmail] = useState(""); // New State
   const navigate = useNavigate();
   const { signUp } = useAuth();
 
@@ -59,8 +62,9 @@ export default function Signup() {
       if (error) {
         toast.error(error.message);
       } else {
-        toast.success("Account created! Please check your email to verify your account.");
-        navigate("/login");
+        setRegisteredEmail(data.email);
+        setIsSignedUp(true); // Switch to the check email view
+        toast.success("Account created successfully!");
       }
     } catch (error) {
       toast.error("An unexpected error occurred");
@@ -71,7 +75,7 @@ export default function Signup() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Panel - Form */}
+      {/* Left Panel */}
       <div className="flex-1 flex items-center justify-center p-8">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -79,168 +83,204 @@ export default function Signup() {
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to home
-          </Link>
-
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">Create your account</h1>
-            <p className="text-muted-foreground">
-              Join PeerPair Kenya and connect with verified companions
-            </p>
-          </div>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email address</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="you@example.com"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          type={showPassword ? "text" : "password"}
-                          placeholder="Create a strong password"
-                          {...field}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full px-3"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          type={showConfirmPassword ? "text" : "password"}
-                          placeholder="Confirm your password"
-                          {...field}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-0 top-0 h-full px-3"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* GATEKEEPER CHECKBOX */}
-              <FormField
-                control={form.control}
-                name="tosAccepted"
-                render={({ field }) => (
-                  <FormItem className="rounded-lg border border-border p-4 bg-accent/30">
-                    <div className="flex items-start gap-3">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          className="mt-0.5"
-                        />
-                      </FormControl>
-                      <div className="space-y-1">
-                        <FormLabel className="text-sm font-medium leading-relaxed cursor-pointer">
-                          I agree to the{" "}
-                          <Link to="/terms" className="text-primary hover:underline">
-                            Terms of Service
-                          </Link>{" "}
-                          and confirm I will adhere to the{" "}
-                          <span className="text-primary font-semibold">
-                            strictly Platonic Conduct Policy
-                          </span>
-                          .
-                        </FormLabel>
-                        <FormMessage />
-                      </div>
-                    </div>
-                  </FormItem>
-                )}
-              />
-
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full"
-                variant="hero"
-                disabled={!tosAccepted || isLoading}
+          {/* Conditional Rendering: Check Email View vs Form View */}
+          {isSignedUp ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center"
+            >
+              <div className="flex justify-center mb-6">
+                <div className="bg-primary/10 p-4 rounded-full">
+                  <Mail className="w-12 h-12 text-primary animate-pulse" />
+                </div>
+              </div>
+              <h1 className="text-3xl font-bold mb-4">Check your email</h1>
+              <p className="text-muted-foreground mb-8">
+                We've sent an activation link to <br />
+                <span className="text-foreground font-semibold font-mono">{registeredEmail}</span>. <br />
+                Please click the link in the email to activate your account.
+              </p>
+              <div className="space-y-4">
+                <Button className="w-full" asChild>
+                  <Link to="/login">Go to Login</Link>
+                </Button>
+                <p className="text-sm text-muted-foreground">
+                  Didn't receive the email? Check your spam folder or{" "}
+                  <button 
+                    onClick={() => setIsSignedUp(false)} 
+                    className="text-primary hover:underline font-medium"
+                  >
+                    try signing up again.
+                  </button>
+                </p>
+              </div>
+            </motion.div>
+          ) : (
+            <>
+              <Link
+                to="/"
+                className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors"
               >
-                {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    Creating account...
-                  </div>
-                ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Create Account
-                  </>
-                )}
-              </Button>
-            </form>
-          </Form>
+                <ArrowLeft className="w-4 h-4" />
+                Back to home
+              </Link>
 
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link to="/login" className="text-primary font-medium hover:underline">
-              Log in
-            </Link>
-          </p>
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold mb-2">Create your account</h1>
+                <p className="text-muted-foreground">
+                  Join PeerPair Kenya and connect with verified companions
+                </p>
+              </div>
+
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email address</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="you@example.com"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              type={showPassword ? "text" : "password"}
+                              placeholder="Create a strong password"
+                              {...field}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-0 top-0 h-full px-3"
+                              onClick={() => setShowPassword(!showPassword)}
+                            >
+                              {showPassword ? (
+                                <EyeOff className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <Eye className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </Button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="confirmPassword"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm Password</FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              type={showConfirmPassword ? "text" : "password"}
+                              placeholder="Confirm your password"
+                              {...field}
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-0 top-0 h-full px-3"
+                              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            >
+                              {showConfirmPassword ? (
+                                <EyeOff className="h-4 w-4 text-muted-foreground" />
+                              ) : (
+                                <Eye className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </Button>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="tosAccepted"
+                    render={({ field }) => (
+                      <FormItem className="rounded-lg border border-border p-4 bg-accent/30">
+                        <div className="flex items-start gap-3">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              className="mt-0.5"
+                            />
+                          </FormControl>
+                          <div className="space-y-1">
+                            <FormLabel className="text-sm font-medium leading-relaxed cursor-pointer">
+                              I agree to the{" "}
+                              <Link to="/terms" className="text-primary hover:underline">
+                                Terms of Service
+                              </Link>{" "}
+                              and confirm I will adhere to the{" "}
+                              <span className="text-primary font-semibold">
+                                strictly Platonic Conduct Policy
+                              </span>
+                              .
+                            </FormLabel>
+                            <FormMessage />
+                          </div>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="w-full"
+                    variant="hero"
+                    disabled={!tosAccepted || isLoading}
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                        Creating account...
+                      </div>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Create Account
+                      </>
+                    )}
+                  </Button>
+                </form>
+              </Form>
+
+              <p className="mt-6 text-center text-sm text-muted-foreground">
+                Already have an account?{" "}
+                <Link to="/login" className="text-primary font-medium hover:underline">
+                  Log in
+                </Link>
+              </p>
+            </>
+          )}
         </motion.div>
       </div>
 
