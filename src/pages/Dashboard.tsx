@@ -9,25 +9,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 export default function Dashboard() {
   const { user } = useAuth();
   const { profile, isLoading: profileLoading } = useProfile();
   const queryClient = useQueryClient();
 
-  // 1. Fetch IDs of activities the user has hidden in the database
+  // 1. Fetch IDs of activities the user has hidden
   const { data: hiddenIds = [] } = useQuery({
     queryKey: ["hidden-activities", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from("hidden_activities")
-        .select("booking_id")
-        .eq("user_id", user.id);
-      
-      if (error) throw error;
-      return data.map((item) => item.booking_id);
+      try {
+        const { data, error } = await supabase
+          .from("hidden_activities")
+          .select("booking_id")
+          .eq("user_id", user.id);
+        
+        if (error) throw error;
+        return data.map((item) => item.booking_id);
+      } catch (err) {
+        console.error("Hidden activities fetch error:", err);
+        return []; // Return empty array so the UI doesn't crash
+      }
     },
     enabled: !!user?.id,
   });
@@ -37,13 +41,12 @@ export default function Dashboard() {
     queryKey: ["my-bookings", user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      
       const { data, error } = await supabase
         .from("bookings")
         .select("*")
         .or(`client_id.eq.${user.id},companion_id.eq.${user.id}`)
         .order("created_at", { ascending: false })
-        .limit(10); // Fetch a few more so we have some left if some are hidden
+        .limit(10);
 
       if (error) throw error;
       return data;
@@ -56,7 +59,6 @@ export default function Dashboard() {
     mutationFn: async () => {
       if (!bookings || !user?.id) return;
 
-      // Only hide bookings that aren't already hidden
       const currentVisibleIds = bookings
         .filter((b) => !hiddenIds.includes(b.id))
         .map((b) => ({
@@ -73,13 +75,8 @@ export default function Dashboard() {
       if (error) throw error;
     },
     onSuccess: () => {
-      // Refresh the hidden list so the UI updates
       queryClient.invalidateQueries({ queryKey: ["hidden-activities", user?.id] });
-      toast.success("Recent activity cleared");
     },
-    onError: () => {
-      toast.error("Failed to clear activity");
-    }
   });
 
   // Filter out the hidden bookings for the UI
@@ -90,22 +87,12 @@ export default function Dashboard() {
   const stats = isCompanion
     ? [
         { title: "Total Earnings", value: "KES 0", icon: DollarSign, change: "+0%" },
-        { 
-          title: "Active Bookings", 
-          value: bookings?.filter((b) => b.status === "funded_escrow").length || 0, 
-          icon: Calendar, 
-          change: "Live" 
-        },
+        { title: "Active Bookings", value: bookings?.filter((b) => b.status === "funded_escrow").length || 0, icon: Calendar, change: "Live" },
         { title: "Profile Views", value: "0", icon: Users, change: "This week" },
       ]
     : [
         { title: "Total Bookings", value: bookings?.length || 0, icon: Calendar, change: "All time" },
-        { 
-          title: "Active Now", 
-          value: bookings?.filter((b) => b.status === "funded_escrow").length || 0, 
-          icon: TrendingUp, 
-          change: "In progress" 
-        },
+        { title: "Active Now", value: bookings?.filter((b) => b.status === "funded_escrow").length || 0, icon: TrendingUp, change: "In progress" },
       ];
 
   return (
