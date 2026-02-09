@@ -1,35 +1,19 @@
-// Kenyan cities and towns for location filter
+// Official 47 Counties of Kenya + High-traffic neighborhoods
 export const KENYAN_LOCATIONS = [
-  "Nairobi",
-  "Mombasa", 
-  "Kisumu",
-  "Nakuru",
-  "Eldoret",
-  "Thika",
-  "Malindi",
-  "Kitale",
-  "Garissa",
-  "Nyeri",
-  "Machakos",
-  "Meru",
-  "Lamu",
-  "Naivasha",
-  "Nanyuki",
-  "Kakamega",
-  "Kericho",
-  "Embu",
-  "Isiolo",
-  "Kilifi",
-  "Westlands",
-  "Karen",
-  "Lavington",
-  "Kilimani",
-  "Lang'ata",
-  "Kileleshwa",
-  "Parklands",
-  "Eastleigh",
-  "South B",
-  "South C",
+  // --- 47 Counties ---
+  "Mombasa", "Kwale", "Kilifi", "Tana River", "Lamu", "Taita Taveta", 
+  "Garissa", "Wajir", "Mandera", "Marsabit", "Isiolo", "Meru", 
+  "Tharaka-Nithi", "Embu", "Kitui", "Machakos", "Makueni", "Nyandarua", 
+  "Nyeri", "Kirinyaga", "Murang'a", "Kiambu", "Turkana", "West Pokot", 
+  "Samburu", "Trans Nzoia", "Uasin Gishu", "Elgeyo Marakwet", "Nandi", 
+  "Baringo", "Laikipia", "Nakuru", "Narok", "Kajiado", "Kericho", 
+  "Bomet", "Kakamega", "Vihiga", "Bungoma", "Busia", "Siaya", 
+  "Kisumu", "Homa Bay", "Migori", "Kisii", "Nyamira", "Nairobi",
+
+  // --- Major Towns & Specific Neighborhoods ---
+  "Eldoret", "Thika", "Malindi", "Kitale", "Naivasha", "Nanyuki",
+  "Westlands", "Karen", "Lavington", "Kilimani", "Lang'ata", 
+  "Kileleshwa", "Parklands", "Eastleigh", "South B", "South C"
 ] as const;
 
 export const COMPLEXION_OPTIONS = [
@@ -57,3 +41,4 @@ export const BOOKING_TYPES = [
 
 export type ComplexionType = typeof COMPLEXION_OPTIONS[number]["value"];
 export type BookingType = typeof BOOKING_TYPES[number]["value"];
+export type KenyanLocation = typeof KENYAN_LOCATIONS[number];
