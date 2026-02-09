@@ -17,6 +17,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { toast } from "sonner";
+import { SocialAuth } from "@/components/auth/SocialAuth"; // Step 1: Import the new component
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -187,6 +188,9 @@ export default function Login() {
               </Button>
             </form>
           </Form>
+
+          {/* Step 2: Add SocialAuth below the form */}
+          <SocialAuth />
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             Don't have an account?{" "}

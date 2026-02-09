@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, ArrowLeft, CheckCircle, Mail } from "lucide-react"; // Added Mail icon
+import { Eye, EyeOff, ArrowLeft, CheckCircle, Mail } from "lucide-react"; 
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { toast } from "sonner";
-import { Card } from "@/components/ui/card"; // Ensure Card is imported
+import { SocialAuth } from "@/components/auth/SocialAuth"; // Step 1: Import the component
 
 const signupSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -38,8 +38,8 @@ export default function Signup() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isSignedUp, setIsSignedUp] = useState(false); // New State
-  const [registeredEmail, setRegisteredEmail] = useState(""); // New State
+  const [isSignedUp, setIsSignedUp] = useState(false); 
+  const [registeredEmail, setRegisteredEmail] = useState(""); 
   const navigate = useNavigate();
   const { signUp } = useAuth();
 
@@ -63,7 +63,7 @@ export default function Signup() {
         toast.error(error.message);
       } else {
         setRegisteredEmail(data.email);
-        setIsSignedUp(true); // Switch to the check email view
+        setIsSignedUp(true); 
         toast.success("Account created successfully!");
       }
     } catch (error) {
@@ -75,7 +75,7 @@ export default function Signup() {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left Panel */}
+      {/* Left Panel - Form Content */}
       <div className="flex-1 flex items-center justify-center p-8">
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -83,7 +83,6 @@ export default function Signup() {
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
-          {/* Conditional Rendering: Check Email View vs Form View */}
           {isSignedUp ? (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -273,6 +272,9 @@ export default function Signup() {
                 </form>
               </Form>
 
+              {/* Step 2: Add SocialAuth here for Signup */}
+              <SocialAuth />
+
               <p className="mt-6 text-center text-sm text-muted-foreground">
                 Already have an account?{" "}
                 <Link to="/login" className="text-primary font-medium hover:underline">
@@ -284,7 +286,7 @@ export default function Signup() {
         </motion.div>
       </div>
 
-      {/* Right Panel - Visual */}
+      {/* Right Panel - Visual Content */}
       <div className="hidden lg:flex flex-1 items-center justify-center bg-primary p-12">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}

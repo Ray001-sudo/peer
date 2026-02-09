@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 // Pages
+import AuthCallback from "./pages/AuthCallback";
 import Landing from "./pages/Landing";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
@@ -85,6 +86,8 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+
             <Route
               path="/bookings"
               element={
